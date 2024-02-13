@@ -21,18 +21,20 @@ import Button from '@mui/material/Button';
 import Divider from '@mui/material/Divider';
 
 import TextField from '@mui/material/TextField';
+import { DateTimePicker } from '@mui/x-date-pickers/DateTimePicker';
+import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
+import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
 
 const ViewPage = () => {
   const router = useRouter();
   console.log('router', router)
-  const { pipelineId, id, mode } = router.query;
-  console.log('pipelineId,id, mode', pipelineId, id, mode)
+  const { pipelineId, id, mode,startdate,enddate } = router.query;
+  console.log('pipelineId,id, mode', pipelineId, id, mode,startdate,enddate)
   const [pipelineName, setPipelineName] = useState('');
   const [pipelineStepId, setPipelineStepId] = useState(0);
   const [pipelineStepName, setPipelineStepName] = useState('');
   // const [formData, setFormData] = useState({ name: '' });
 
-  const [selectedMode, setSelectedMode] = React.useState('table');
   const [showDiv1, setShowDiv1] = React.useState(true);
   const [showDiv2, setShowDiv2] = React.useState(false);
 
@@ -43,6 +45,9 @@ const ViewPage = () => {
     { value: 'dedope', label: 'Dedope' },
   ];
 
+
+
+  
   const handleModeChange = (event) => {
     setSelectedMode(event.target.value);
 
@@ -59,17 +64,45 @@ const ViewPage = () => {
   const [showOperationDDL, setShowOperationDDL] = React.useState(false);
 
 
+  // const [startDate, setStartDate] = useState('');
+  // const [endDate, setEndDate] = useState('');
+
+  function convertToCustomFormat(dateString) {
+    const dateObject = new Date(dateString);
+  
+    const year = dateObject.getFullYear();
+    const month = (dateObject.getMonth() + 1).toString().padStart(2, '0');
+    const day = dateObject.getDate().toString().padStart(2, '0');
+    const hours = dateObject.getHours().toString().padStart(2, '0');
+    const minutes = dateObject.getMinutes().toString().padStart(2, '0');
+    const seconds = dateObject.getSeconds().toString().padStart(2, '0');
+  
+    const formattedDateTime = `${year}-${month}-${day}T${hours}:${minutes}:${seconds}`;
+    console.log('formattedDateTime',formattedDateTime)
+    return formattedDateTime;
+  }
+
+  // const [startDate, setStartDate] = useState(convertToCustomFormat(startdate));
+  // const [endDate, setEndDate] = useState(convertToCustomFormat(enddate));
+  const [selectedMode, setSelectedMode] = React.useState('table');
+
   const [modeType, setModeType] = useState('');
   const [table, setTable] = useState('');
   const [column, setColumn] = useState('');
-  const [operation, setOperation] = useState('');
+  const [operation, ] = useState('');
   const [dedopeColumn, setDedopeColumn] = useState('');
-  const [createOutputTable, setCreateOutputTable] = useState('');
+  const [createOutputTable, setCreateOutputTable] = useState(true);
   const [query, setQuery] = useState('');
   const [tableList, setTableList] = useState([]);
   const [columnList, setColumnList] = useState([]);
   const [columnArr, setColumnArr] = useState([]);
 
+  
+
+ 
+  
+
+  const [showDedopeColumnList, setShowDedopeColumnList] = React.useState(false);
   const handleTableChange = (event) => {
     console.log('handleTableChange',event)
     setTable(event);
@@ -83,12 +116,10 @@ const ViewPage = () => {
       setShowOperationDDL(true);
     }
   };
-
+  
   const handleColumnChange = (event) => {
     setColumn(event);
   };
-
-  const [showDedopeColumnList, setShowDedopeColumnList] = React.useState(false);
 
   const handleOperationChange = (event) => {
     setOperation(event);
@@ -109,6 +140,19 @@ const ViewPage = () => {
         const data = await apiPLS.getPipelineStepById(id);
         console.log('data', data)
         setPipelineStepId(data[0].id)
+        setPipelineStepName(data[0].name)
+        setSelectedMode(data[0].mode)
+        handleModeChange(data[0].mode)
+        // if(data[0].selectedMode==table){
+        //   setShowColumnDDL(true);
+        // }
+        setTable(data[0].table)
+        setColumn(data[0].column)
+        setOperation(data[0].operation)
+        setDedopeColumn(data[0].dedopeColumn)
+        setCreateOutputTable(data[0].createOutputTable)
+        setQuery(data[0].query)
+        setPipelineStepName(data[0].name)
         setPipelineStepName(data[0].name)
         // setRecord(data);
       } catch (error) {
@@ -173,6 +217,7 @@ const ViewPage = () => {
       console.log('objArr', objArr)
       // setColumnList(objList);
       setColumnArr(objArr);
+      setLeft(objArr);
     }
     } catch (error) {
       console.error('Error fetching pipelines', error);
@@ -217,14 +262,13 @@ const ViewPage = () => {
       const dataObj = {
         pipelineId: pipelineId,
         name: pipelineStepName,
-        startDate: '',
-        endDate: '',
-        mode: modeType,
-        mode: modeType,
+        startDate: convertToCustomFormat(startdate),
+        endDate: convertToCustomFormat(enddate),
+        mode: selectedMode,
         table: table,
         column: column,
         operation: operation,
-        dedopeColumn: dedopeColumn,
+        dedopeColumn: right.join(),
         createOutputTable: createOutputTable,
         query: query,
       };
@@ -244,6 +288,15 @@ const ViewPage = () => {
     }
   };
 
+  const handleStartdateChange = (newValue) => {
+    setStartDate(newValue);
+    console.log('setStartdate', newValue)
+  };
+
+  const handleEnddateChange = (newValue) => {
+    setEndDate(newValue);
+    console.log('setEndDate', newValue)
+  };
 
   // Transfer List Events
   function not(a, b) {
@@ -440,7 +493,7 @@ const ViewPage = () => {
                     <MenuItem value="option3">Table 3</MenuItem>
                   </Select>
                 </FormControl> */}
-                
+                <br/>
               <GenericDropdown
                 label="Select Table"
                 defaultValue={table}
@@ -468,7 +521,7 @@ const ViewPage = () => {
                 //   <MenuItem value="option3">Column 3</MenuItem>
                 // </Select>
                 // </FormControl>
-<><br/>
+<><br/><br/>
                 <GenericDropdown
                 label="Select Column"
                 defaultValue={column}
@@ -499,7 +552,7 @@ const ViewPage = () => {
                 //   <MenuItem value="dedope">Dedope</MenuItem>
                 // </Select>
                 // </FormControl>
-              <><br/>
+              <><br/><br/>
                 <GenericDropdown
                 label="Select operation"
                 defaultValue={operation}
@@ -517,7 +570,7 @@ const ViewPage = () => {
                 {/* Dedope Column List */}
                 {showDedopeColumnList && (
                 <Grid container spacing={2} justifyContent="center" alignItems="center">
-                  <Grid item>{customList('Choices', columnArr)}</Grid>
+                  <Grid item>{customList('Choices', left)}</Grid>
                   <Grid item>
                     <Grid container direction="column" alignItems="center">
                       <Button
@@ -545,7 +598,17 @@ const ViewPage = () => {
                   <Grid item>{customList('Chosen', right)}</Grid>
                 </Grid>
                 )}
-                <FormControlLabel control={<Checkbox defaultChecked />} label="Create Output Table" />
+              <FormControlLabel control={
+                <Checkbox defaultChecked
+                  defaultValue={createOutputTable}
+                  onChange={(e) => {
+                    setCreateOutputTable(e.target.checked)
+                    console.log('setCreateOutputTable', e.target.checked)
+                  }
+                  }
+                />
+              } label="Create Output Table"
+              />
 
               </div>
           )}
@@ -559,7 +622,7 @@ const ViewPage = () => {
                         id="start-date"
                         label="<Start Date>"
                         fullWidth
-                        defaultValue="2024-02-14"
+                        defaultValue={startdate}
                         disabled // Make the field read-only
                       />
                     </Grid>
@@ -568,13 +631,32 @@ const ViewPage = () => {
                         id="end-date"
                         label="<End Date>"
                         fullWidth
-                        defaultValue="2024-02-14"
+                        defaultValue={enddate}
                         disabled // Make the field read-only
                       />
                     </Grid>
                   </Grid>
-                
-                 <FormControl fullWidth sx={{ marginBottom: '10px'}} >
+                     
+              {/* <LocalizationProvider dateAdapter={AdapterDayjs}>
+                <div style={{ display: 'flex', gap: '16px', marginBottom: '20px' }}>
+                  <DateTimePicker
+                    label="Start Date"
+                    value={startDate}
+                    // disabled={true}
+                    onChange={handleStartdateChange}
+                    renderInput={(params) => <TextField {...params} />}
+                  />
+
+                  <DateTimePicker
+                    label="End Date"
+                    value={endDate}
+                    // disabled={true}
+                    onChange={handleEnddateChange}
+                    renderInput={(params) => <TextField {...params} />}
+                  />
+                </div>
+              </LocalizationProvider> */}
+                  <FormControl fullWidth sx={{ marginBottom: '10px'}} >
                     <FormLabel htmlFor="textarea">Query</FormLabel>
                     <TextareaAutosize
                       id="textarea"

@@ -119,11 +119,25 @@ const PipelineStepPage = () => {
   const handleChange = (newValue) => {
     setValue(newValue);
   };
+  function getCurrentDateTime() {
+    const now = new Date();
+  
+    const year = now.getFullYear();
+    const month = (now.getMonth() + 1).toString().padStart(2, '0');
+    const day = now.getDate().toString().padStart(2, '0');
+    const hours = now.getHours().toString().padStart(2, '0');
+    const minutes = now.getMinutes().toString().padStart(2, '0');
+    const seconds = now.getSeconds().toString().padStart(2, '0');
+  
+    const formattedDateTime = `${year}-${month}-${day}T${hours}:${minutes}:${seconds}`;
+    return formattedDateTime;
+  }
 
-  const [startdate, setStartdate] = React.useState(dayjs('2014-08-18T21:11:54'));
-  const [enddate, setEnddate] = React.useState(dayjs('2014-08-18T21:11:54'));
+  const [startdate, setStartdate] = React.useState(dayjs(getCurrentDateTime()));
+  const [enddate, setEnddate] = React.useState(dayjs(getCurrentDateTime()));
   const handleStartdateChange = (newValue) => {
     setStartdate(newValue);
+    console.log('setStartdate', newValue)
   };
 
   const handleEnddateChange = (newValue) => {
@@ -223,7 +237,7 @@ const PipelineStepPage = () => {
       <div className={styles.pipelineList}>
         <div className={styles.header}>
           <h2>Pipeline steps for <strong>{pipelineName}</strong> </h2>
-          <Link href={`/pipeline-step/${pipelineId}/access/crud?id=0&mode=add`} passHref>
+          <Link href={`/pipeline-step/${pipelineId}/access/crud?id=0&mode=add&startdate=${startdate}&enddate=${enddate}`} passHref>
             <button className={styles.addButton} type='button'>Add Pipeline Step</button>
             {/* <a className={styles.addButton}>Add Pipeline</a> */}
           </Link>
