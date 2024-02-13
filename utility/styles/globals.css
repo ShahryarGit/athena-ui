@@ -1,0 +1,19 @@
+/* styles/globals.css */
+
+/* Reset some default styles */
+body,
+h1,
+h2,
+h3,
+p {
+  margin: 0;
+  padding: 0;
+}
+
+/* Apply a basic font family and box-sizing */
+body {
+  font-family: 'Arial', sans-serif;
+  box-sizing: border-box;
+}
+
+/* Add more global styles if needed */
