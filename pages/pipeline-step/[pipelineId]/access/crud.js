@@ -89,7 +89,8 @@ const ViewPage = () => {
   const [modeType, setModeType] = useState('');
   const [table, setTable] = useState('');
   const [column, setColumn] = useState('');
-  const [operation, ] = useState('');
+  const [operation, setOperation] = useState('');
+  // const [operation, ] = useState('');
   const [dedopeColumn, setDedopeColumn] = useState('');
   const [createOutputTable, setCreateOutputTable] = useState(true);
   const [query, setQuery] = useState('');
