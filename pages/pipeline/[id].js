@@ -58,7 +58,6 @@ const ViewPage = () => {
           })
         });
         setConnectionList(conList)
-
       }
       console.log('conList', conList)
     } catch (error) {

@@ -94,6 +94,15 @@ const api = {
             throw error;
           }
       },
+      getAllColumnsByTable: async (table) => {
+        try {
+          const response = await fetch(`${BASE_URL}/getAllColumnsByTable/${table}`).then((res) => res.json());
+          return response;
+        } catch (error) {
+          console.error('Failed to get tables', error);
+          throw error;
+        }
+      },
 };
 
 

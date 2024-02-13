@@ -4,6 +4,8 @@ import { useRouter } from 'next/router';
 import apiPLS from '../../../api/pipieline_steps_apies';
 import apiPL from '../../../api/pipieline_apies';
 import styles from '../../../../utility/styles/PipelineList.module.css'; // Import your CSS module
+import GenericDropdown from '../../../../components/GenericDropdown';
+import apiDb from '../../../api/dbmanagement';
 
 import { Radio, RadioGroup, FormControl, FormControlLabel, FormLabel, Select, MenuItem, InputLabel, TextareaAutosize } from '@mui/material';
 
@@ -34,6 +36,13 @@ const ViewPage = () => {
   const [showDiv1, setShowDiv1] = React.useState(true);
   const [showDiv2, setShowDiv2] = React.useState(false);
 
+
+  const operationList = [
+    { value: '', label: 'None' },
+    { value: 'remove_nulls', label: 'Remove NULLS' },
+    { value: 'dedope', label: 'Dedope' },
+  ];
+
   const handleModeChange = (event) => {
     setSelectedMode(event.target.value);
 
@@ -46,14 +55,26 @@ const ViewPage = () => {
     }
   };
 
-  const [selectedTable, setSelectedTable] = React.useState('');
   const [showColumnDDL, setShowColumnDDL] = React.useState(false);
   const [showOperationDDL, setShowOperationDDL] = React.useState(false);
 
-  const handleTableChange = (event) => {
-    setSelectedTable(event.target.value);
 
-    if (event.target.value === '') {
+  const [modeType, setModeType] = useState('');
+  const [table, setTable] = useState('');
+  const [column, setColumn] = useState('');
+  const [operation, setOperation] = useState('');
+  const [dedopeColumn, setDedopeColumn] = useState('');
+  const [createOutputTable, setCreateOutputTable] = useState('');
+  const [query, setQuery] = useState('');
+  const [tableList, setTableList] = useState([]);
+  const [columnList, setColumnList] = useState([]);
+  const [columnArr, setColumnArr] = useState([]);
+
+  const handleTableChange = (event) => {
+    console.log('handleTableChange',event)
+    setTable(event);
+    fetchColumnsByTable(event)
+    if (event=== '') {
       setShowColumnDDL(false);
       setShowOperationDDL(false);
     } else {
@@ -62,22 +83,142 @@ const ViewPage = () => {
     }
   };
 
-  const [selectedColumn, setSelectedColumn] = React.useState('');
   const handleColumnChange = (event) => {
-    setSelectedColumn(event.target.value);
+    setColumn(event);
   };
 
-  const [selectedOperation, setSelectedOperation] = React.useState('');
   const [showDedopeColumnList, setShowDedopeColumnList] = React.useState(false);
 
   const handleOperationChange = (event) => {
-    setSelectedOperation(event.target.value);
-    if (event.target.value === 'dedope') {
+    setOperation(event);
+    if (event === 'dedope') {
       setShowDedopeColumnList(true);
     } else {
       setShowDedopeColumnList(false);
     }
   };
+
+  
+
+
+  useEffect(() => {
+    const fetchgetPipelineStepById = async () => {
+      try {
+        console.log('getPipelineStepById', id)
+        const data = await apiPLS.getPipelineStepById(id);
+        console.log('data', data)
+        setPipelineStepId(data[0].id)
+        setPipelineStepName(data[0].name)
+        // setRecord(data);
+      } catch (error) {
+        console.error(`Error fetching record with ID ${id}`, error);
+      }
+    };
+
+    if (id && (mode === 'edit' || mode === 'view')) {
+      fetchgetPipelineStepById();
+    }
+    fetchPipeline();
+    fetchTable();
+    
+  }, [id, mode]);
+ 
+
+  const fetchPipeline = async () => {
+    try {
+      const data = await apiPL.getPipelineById(pipelineId);
+      console.log('pipelinesData', data)
+      setPipelineName(data[0].name)
+    } catch (error) {
+      console.error('Error fetching pipelines', error);
+    }
+  };
+
+  const fetchTable = async () => {
+    try {
+      const data = await apiDb.getAllTables();
+      console.log('fetchTable', data)
+      const objList = [];
+      if (data && data.length > 0) {
+        data.map((item) => {
+          objList.push({
+            value: item.tablename,
+            label: item.tablename
+          })
+        });
+      setTableList(objList);
+    }
+    } 
+    catch (error) {
+      console.error('Error fetching pipelines', error);
+    }
+  };
+
+
+  const fetchColumnsByTable = async (tableName) => {
+    try {
+      const data = await apiDb.getAllColumnsByTable(tableName);
+      console.log('fetchColumnsByTable', data)
+      const objList = [];
+      const objArr = [];
+      if (data && data.length > 0) {
+        data.map((item) => {
+          objList.push({
+            value: item.column_name,
+            label: item.column_name
+          })
+          objArr.push(item.column_name)
+        });
+      console.log('objArr', objArr)
+      setColumnList(objList);
+      setColumnArr(objArr);
+    }
+    } catch (error) {
+      console.error('Error fetching pipelines', error);
+    }
+  };
+
+
+  const handleSave = async (e) => {
+    e.preventDefault();
+    if (mode === 'view') {
+      return;
+    }
+    if (!pipelineStepName || pipelineStepName == '') {
+      alert('Name should not be empty!')
+      return;
+    }
+    try {
+      const dataObj = {
+        pipelineId: pipelineId,
+        name: pipelineStepName,
+        startDate: '',
+        endDate: '',
+        mode: modeType,
+        mode: modeType,
+        table: table,
+        column: column,
+        operation: operation,
+        dedopeColumn: dedopeColumn,
+        createOutputTable: createOutputTable,
+        query: query,
+      };
+      if (id && mode === 'edit') {
+        const obj = await apiPLS.updatePipelineStep(id, dataObj);
+        console.log('record updated successfully', obj)
+        router.push('/pipeline-step/[pipelineId]/access',
+          `/pipeline-step/${pipelineId}/access`)
+      } else {
+        const obj = await apiPLS.createPipelineStep(dataObj);
+        console.log('record saved successfully', obj)
+        router.push('/pipeline-step/[pipelineId]/access',
+          `/pipeline-step/${pipelineId}/access`)
+      }
+    } catch (error) {
+      console.error('Error saving record', error);
+    }
+  };
+
 
   // Transfer List Events
   function not(a, b) {
@@ -93,8 +234,8 @@ const ViewPage = () => {
   }
 
   const [checked, setChecked] = React.useState([]);
-  const [left, setLeft] = React.useState([0, 1, 2, 3]);
-  const [right, setRight] = React.useState([4, 5, 6, 7]);
+  const [left, setLeft] = React.useState(columnArr);
+  const [right, setRight] = React.useState([]);
 
   const leftChecked = intersection(checked, left);
   const rightChecked = intersection(checked, right);
@@ -110,6 +251,7 @@ const ViewPage = () => {
     }
 
     setChecked(newChecked);
+    console.log('newChecked',newChecked,right)
   };
 
   const numberOfChecked = (items) => intersection(checked, items).length;
@@ -185,76 +327,13 @@ const ViewPage = () => {
                   }}
                 />
               </ListItemIcon>
-              <ListItemText id={labelId} primary={`Column ${value + 1}`} />
+              <ListItemText id={labelId} primary={`${value}`} />
             </ListItemButton>
           );
         })}
       </List>
     </Card>
   );
-
-
-  useEffect(() => {
-    const fetchgetPipelineStepById = async () => {
-      try {
-        console.log('getPipelineStepById', id)
-        const data = await apiPLS.getPipelineStepById(id);
-        console.log('data', data)
-        setPipelineStepId(data[0].id)
-        setPipelineStepName(data[0].name)
-        // setRecord(data);
-      } catch (error) {
-        console.error(`Error fetching record with ID ${id}`, error);
-      }
-    };
-
-    if (id && (mode === 'edit' || mode === 'view')) {
-      fetchgetPipelineStepById();
-    }
-    fetchPipeline();
-
-  }, [id, mode]);
-
-
-  const fetchPipeline = async () => {
-    try {
-      const data = await apiPL.getPipelineById(pipelineId);
-      console.log('pipelinesData', data)
-      setPipelineName(data[0].name)
-    } catch (error) {
-      console.error('Error fetching pipelines', error);
-    }
-  };
-
-  const handleSave = async (e) => {
-    e.preventDefault();
-    if (mode === 'view') {
-      return;
-    }
-    if (!pipelineStepName || pipelineStepName == '') {
-      alert('Name should not be empty!')
-      return;
-    }
-    try {
-      const dataObj = {
-        pipelineId: pipelineId,
-        name: pipelineStepName
-      };
-      if (id && mode === 'edit') {
-        const obj = await apiPLS.updatePipelineStep(id, dataObj);
-        console.log('record updated successfully', obj)
-        router.push('/pipeline-step/[pipelineId]/access',
-          `/pipeline-step/${pipelineId}/access`)
-      } else {
-        const obj = await apiPLS.createPipelineStep(dataObj);
-        console.log('record saved successfully', obj)
-        router.push('/pipeline-step/[pipelineId]/access',
-          `/pipeline-step/${pipelineId}/access`)
-      }
-    } catch (error) {
-      console.error('Error saving record', error);
-    }
-  };
 
   return (
     // <div>
@@ -322,7 +401,7 @@ const ViewPage = () => {
           {showDiv1 && (
             <div>
                {/* Table */}
-               <FormControl fullWidth sx={{ marginBottom: '20px', marginTop: '20px'}} >
+               {/* <FormControl fullWidth sx={{ marginBottom: '20px', marginTop: '20px'}} >
                   <InputLabel id="demo-simple-select-label">Select Table</InputLabel>
                   <Select
                     labelId="demo-simple-select-label"
@@ -335,44 +414,85 @@ const ViewPage = () => {
                     <MenuItem value="option2">Table 2</MenuItem>
                     <MenuItem value="option3">Table 3</MenuItem>
                   </Select>
-                </FormControl>
+                </FormControl> */}
                 
+              <GenericDropdown
+                label="Select Table"
+                defaultValue={table}
+                options={tableList}
+                disabled={false} // Set to true to disable the dropdown
+                onChange={(e) => {
+                  handleTableChange(e)
+                  console.log('e',e)
+                }}
+                style={{ marginTop: '5px' }}
+              />
+
                 {/* Column */}
                 {showColumnDDL && (
-                <FormControl fullWidth  sx={{ marginBottom: '20px'}}>
-                <InputLabel id="demo-simple-select-label">Select Column</InputLabel>
-                <Select
-                  labelId="demo-simple-select-label"
-                  id="demo-simple-select"
-                  value={selectedColumn}
-                  onChange={handleColumnChange}
-                >
-                  <MenuItem value="option1">Column 1</MenuItem>
-                  <MenuItem value="option2">Column 2</MenuItem>
-                  <MenuItem value="option3">Column 3</MenuItem>
-                </Select>
-                </FormControl>
+                // <FormControl fullWidth  sx={{ marginBottom: '20px'}}>
+                // <InputLabel id="demo-simple-select-label">Select Column</InputLabel>
+                // <Select
+                //   labelId="demo-simple-select-label"
+                //   id="demo-simple-select"
+                //   value={selectedColumn}
+                //   onChange={handleColumnChange}
+                // >
+                //   <MenuItem value="option1">Column 1</MenuItem>
+                //   <MenuItem value="option2">Column 2</MenuItem>
+                //   <MenuItem value="option3">Column 3</MenuItem>
+                // </Select>
+                // </FormControl>
+<><br/>
+                <GenericDropdown
+                label="Select Column"
+                defaultValue={column}
+                options={columnList}
+                disabled={false} // Set to true to disable the dropdown
+                onChange={(e) => {
+                  handleColumnChange(e)
+                  console.log('e',e)
+                }}
+                style={{ marginTop: '5px' }}
+                /></>
                 )}
+
+                
                 {/* Operation */}
-                {showOperationDDL && (
-                <FormControl fullWidth  sx={{ marginBottom: '20px'}}>
-                <InputLabel id="demo-simple-select-label">Select Operation</InputLabel>
-                <Select
-                  labelId="demo-simple-select-label"
-                  id="demo-simple-select"
-                  value={selectedOperation}
-                  onChange={handleOperationChange}
-                >
-                  <MenuItem value="">None</MenuItem>
-                  <MenuItem value="remove_nulls">Remove NULLS</MenuItem>
-                  <MenuItem value="dedope">Dedope</MenuItem>
-                </Select>
-                </FormControl>
+                
+                 {showOperationDDL && (
+                // <FormControl fullWidth  sx={{ marginBottom: '20px'}}>
+                // <InputLabel id="demo-simple-select-label">Select Operation</InputLabel>
+                // <Select
+                //   labelId="demo-simple-select-label"
+                //   id="demo-simple-select"
+                //   value={selectedOperation}
+                //   onChange={handleOperationChange}
+                // >
+                //   <MenuItem value="">None</MenuItem>
+                //   <MenuItem value="remove_nulls">Remove NULLS</MenuItem>
+                //   <MenuItem value="dedope">Dedope</MenuItem>
+                // </Select>
+                // </FormControl>
+              <><br/>
+                <GenericDropdown
+                label="Select operation"
+                defaultValue={operation}
+                options={operationList}
+                disabled={false} // Set to true to disable the dropdown
+                onChange={(e) => {
+                  handleOperationChange(e)
+                  console.log('e',e)
+                }}
+                style={{ marginTop: '5px' }}
+              /></>
                 )}
+
+
                 {/* Dedope Column List */}
                 {showDedopeColumnList && (
                 <Grid container spacing={2} justifyContent="center" alignItems="center">
-                  <Grid item>{customList('Choices', left)}</Grid>
+                  <Grid item>{customList('Choices', columnArr)}</Grid>
                   <Grid item>
                     <Grid container direction="column" alignItems="center">
                       <Button
