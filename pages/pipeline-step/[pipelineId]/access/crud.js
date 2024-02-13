@@ -73,6 +73,7 @@ const ViewPage = () => {
   const handleTableChange = (event) => {
     console.log('handleTableChange',event)
     setTable(event);
+    fatchDateTimeFieldsByTable(event)
     fetchColumnsByTable(event)
     if (event=== '') {
       setShowColumnDDL(false);
@@ -170,8 +171,32 @@ const ViewPage = () => {
           objArr.push(item.column_name)
         });
       console.log('objArr', objArr)
-      setColumnList(objList);
+      // setColumnList(objList);
       setColumnArr(objArr);
+    }
+    } catch (error) {
+      console.error('Error fetching pipelines', error);
+    }
+  };
+
+
+  const fatchDateTimeFieldsByTable = async (tableName) => {
+    try {
+      const data = await apiDb.deleteDataGetDtFields(tableName);
+      console.log('fatchDateTimeFieldsByTable', data)
+      const objList = [];
+      const objArr = [];
+      if (data && data.length > 0) {
+        data.map((item) => {
+          objList.push({
+            value: item.column_name,
+            label: item.column_name
+          })
+          objArr.push(item.column_name)
+        });
+      console.log('objArr 22', objArr)
+      setColumnList(objList);
+      // setColumnArr(objArr);
     }
     } catch (error) {
       console.error('Error fetching pipelines', error);
